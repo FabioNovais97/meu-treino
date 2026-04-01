@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>Meu Treino</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>🏋️ Meus Treinos</h2>
+
+        <div class="workout-selector">
+            <button onclick="buscarTreino('A')">A</button>
+            <button onclick="buscarTreino('B')">B</button>
+            <button onclick="buscarTreino('C')">C</button>
+            <button onclick="buscarTreino('D')">D</button>
+        </div>
+
+        <div id="lista-exercicios">
+            <p style="text-align: center; color: #666;">Selecione um treino acima</p>
+        </div>
+
+        <div id="controles-edicao" style="display:none;">
+            <button class="btn-save" onclick="salvarAlteracoes()">💾 Salvar Alterações</button>
+            <button class="btn-cancel" onclick="toggleEdicao()">Cancelar</button>
+        </div>
+        
+        <button id="btn-editar" onclick="toggleEdicao()" style="display:none;">✏️ Editar Treino</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
