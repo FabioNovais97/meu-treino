@@ -42,18 +42,3 @@ h2 { text-align: center; margin: 20px 0; color: #00ff88; text-transform: upperca
 .card-edit { background: #252525; padding: 15px; border-radius: 10px; margin-bottom: 10px; }
 .card-edit input { width: 100%; padding: 12px; margin: 5px 0; background: #333; border: 1px solid #444; color: white; border-radius: 6px; font-size: 16px; }
 #btn-editar { position: fixed; bottom: 30px; right: 20px; background: #00ff88; color: #000; border: none; padding: 15px 20px; border-radius: 30px; font-weight: bold; }
-.btn-reset-bloco {
-    width: 100%;
-    margin-top: 25px;
-    padding: 15px;
-    background: transparent;
-    color: #ff4444;
-    border: 2px solid #ff4444;
-    border-radius: 12px;
-    font-weight: bold;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-.btn-reset-bloco:active {
-    background: rgba(255, 68, 68, 0.1);
-}
