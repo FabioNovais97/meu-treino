@@ -5,23 +5,45 @@ const _supabase = supabase.createClient(
 
 let treinoAtualLocal = [];
 let blocoAtivo = '';
+let wakeLock = null; // Variável para controlar o bloqueio de tela
 
-// Extrai o número de séries da descrição (ex: "4x12" -> 4)
-function extrairSeries(descricao) {
-    const match = descricao.match(/(\d+)\s*[xX]/);
-    return match ? parseInt(match[1]) : 3; 
+// Função para impedir que a tela apague
+async function manterTelaAcesa() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {
+        console.log("Wake Lock não suportado ou negado.");
+    }
 }
 
-// Inicia o timer de descanso
+// Função para liberar a tela (deixar apagar normalmente)
+function liberarTela() {
+    if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
+
+function extrairSeries(descricao) {
+    const match = descricao.match(/(\d+)\s*[xX]/);
+    return match ? parseInt(match[1]) : 4; 
+}
+
 function iniciarTimer(tempoStr) {
     let tempo = parseInt(tempoStr) || 60;
+    
+    // Ativa o bloqueio de tela assim que o timer começa
+    manterTelaAcesa();
+
     const overlay = document.createElement('div');
     overlay.id = 'timer-overlay';
     overlay.innerHTML = `
         <div class="timer-content">
             <h2 id="contagem">${tempo}s</h2>
             <p>Descanso em progresso...</p>
-            <button onclick="this.parentElement.parentElement.remove()">Pular</button>
+            <button onclick="fecharTimer(this)">Pular</button>
         </div>
     `;
     document.body.appendChild(overlay);
@@ -29,18 +51,32 @@ function iniciarTimer(tempoStr) {
     const intervalo = setInterval(() => {
         tempo--;
         const display = document.getElementById('contagem');
-        if (!display) { clearInterval(intervalo); return; }
+        if (!display) { 
+            clearInterval(intervalo); 
+            liberarTela(); 
+            return; 
+        }
+        
         display.innerText = tempo + "s";
+        
         if (tempo <= 0) {
             clearInterval(intervalo);
             display.innerText = "FIM!";
             if (navigator.vibrate) navigator.vibrate(500);
-            setTimeout(() => overlay.remove(), 1500);
+            setTimeout(() => {
+                overlay.remove();
+                liberarTela(); // Deixa a tela apagar após o fim do timer
+            }, 1500);
         }
     }, 1000);
 }
 
-// Lógica de contar série e salvar no celular
+// Função auxiliar para fechar o timer manualmente
+function fecharTimer(btn) {
+    btn.parentElement.parentElement.remove();
+    liberarTela();
+}
+
 function contarSerie(id, total, tempo, event) {
     event.stopPropagation();
     let feitas = parseInt(localStorage.getItem(`series_${id}`)) || 0;
@@ -49,11 +85,10 @@ function contarSerie(id, total, tempo, event) {
         feitas++;
         localStorage.setItem(`series_${id}`, feitas);
         
-        // Se ainda não acabou o exercício, solta o timer
-        if (feitas < total) {
-            iniciarTimer(tempo);
-        }
-        renderizarTreino(false); // Atualiza as bolinhas na tela
+        // MELHORIA: Agora ele sempre inicia o timer, mesmo na última série
+        iniciarTimer(tempo);
+        
+        renderizarTreino(false);
     }
 }
 
@@ -94,7 +129,6 @@ function renderizarTreino(editavel) {
 
             div.className = `exercise-item ${concluido ? 'concluido' : ''}`;
             
-            // Gerar bolinhas de progresso
             let dots = '';
             for(let i=0; i<total; i++) {
                 dots += `<span class="dot ${i < feitas ? 'active' : ''}"></span>`;
@@ -113,16 +147,24 @@ function renderizarTreino(editavel) {
         }
         container.appendChild(div);
     });
-}
 
-function resetarTreinoDia() {
-    if(confirm("Limpar todas as séries de hoje?")) {
-        localStorage.clear();
-        location.reload();
+    // MELHORIA: Botão de Reset específico para o bloco atual no final da lista
+    if (!editavel && treinoAtualLocal.length > 0) {
+        const btnReset = document.createElement('button');
+        btnReset.className = 'btn-reset-bloco';
+        btnReset.innerHTML = '🔄 Finalizar e Resetar Treino';
+        btnReset.onclick = () => {
+            if (confirm(`Limpar progresso do Treino ${blocoAtivo}?`)) {
+                treinoAtualLocal.forEach(ex => localStorage.removeItem(`series_${ex.id}`));
+                renderizarTreino(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+        container.appendChild(btnReset);
     }
 }
 
-// Funções de Edição mantidas conforme anterior...
+// Funções de Edição e Reset Geral mantidas
 function toggleEdicao() {
     const painelEdicao = document.getElementById('controles-edicao');
     const btnEditar = document.getElementById('btn-editar');
@@ -136,7 +178,7 @@ async function salvarAlteracoes() {
     for (let i = 0; i < treinoAtualLocal.length; i++) {
         const novoEx = document.getElementById(`ex-${i}`).value;
         const novaDesc = document.getElementById(`desc-${i}`).value;
-        const novoTimer = document.getElementById(`timer-${i}`).value;
+        const novoTimer = document.getElementById(`timer-${index}`).value;
         await _supabase.from('treinos').update({ 
             exercicio: novoEx, descricao: novaDesc, descanso: novoTimer 
         }).eq('id', treinoAtualLocal[i].id);
